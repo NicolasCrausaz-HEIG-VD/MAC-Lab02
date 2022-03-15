@@ -3,11 +3,12 @@ package ch.heig.mac;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.neo4j.driver.*;
 import org.neo4j.driver.Record;
 
 public class Requests {
-    private static final  Logger LOGGER = Logger.getLogger(Requests.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Requests.class.getName());
     private final Driver driver;
 
     public Requests(Driver driver) {
@@ -28,7 +29,13 @@ public class Requests {
     }
 
     public List<Record> possibleSpreadCounts() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var result = driver.session().run(
+                "MATCH (p:Person{healthstatus: 'Sick'})-->(v1:Visit)" +
+                "-->(pl:Place)<--(v2:Visit)<--(h:Person{healthstatus: 'Healthy'}) \n" +
+                "WHERE p.confirmedtime < v2.starttime\n" +
+                "RETURN p.name AS sickName, COUNT(h) AS nbHealthy");
+
+        return result.list();
     }
 
     public List<Record> carelessPeople() {

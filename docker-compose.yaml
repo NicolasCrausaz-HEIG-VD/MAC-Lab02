@@ -1,0 +1,22 @@
+version: '3'
+services:
+  graphdb:
+    image: neo4j:4.4
+    environment:
+      NEO4J_AUTH: none
+    networks:
+      - backend
+    volumes:
+      - "neo4j-data:/data"
+      - ./plugins:/plugins
+    ports:
+      - 7474:7474
+      - 7687:7687
+    #user: "${UID_GID}"
+volumes:
+  neo4j-data:
+    external: true
+    name: mac-lab-neo4j-data-vol
+networks:
+  backend:
+    driver: "bridge"

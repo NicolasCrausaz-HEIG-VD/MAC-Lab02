@@ -1,6 +1,8 @@
 package ch.heig.mac;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,6 +72,16 @@ public class Requests {
     }
 
     public List<Record> sickFrom(List<String> names) {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        Map<String, Object> params = new HashMap<>();
+        params.put("listOfNames", names);
+
+        var result = driver.session().run(
+                "MATCH (p:Person {healthstatus:'Sick'})\n" +
+                "WHERE p.name IN $listOfNames\n" +
+                "RETURN p.name AS sickName",
+                params
+        );
+
+        return result.list();
     }
 }

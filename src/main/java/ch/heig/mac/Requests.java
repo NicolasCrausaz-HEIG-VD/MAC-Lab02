@@ -41,7 +41,16 @@ public class Requests {
     }
 
     public List<Record> carelessPeople() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var result = driver.session().run(
+                "MATCH (sick:Person{healthstatus: 'Sick'})-[v:VISITS]->(p:Place)\n" +
+                        "WHERE v.starttime > sick.confirmedtime\n" +
+                        "WITH sick.name as sickName, count(DISTINCT p.name) as nbPlaces\n" +
+                        "WHERE nbPlaces > 10\n" +
+                        "RETURN sickName, nbPlaces\n" +
+                        "ORDER BY nbPlaces DESC;"
+        );
+
+        return result.list();
     }
 
     public List<Record> sociallyCareful() {
@@ -68,7 +77,16 @@ public class Requests {
     }
 
     public Record topSickSite() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var result = driver.session().run(
+                "MATCH (sick:Person{healthstatus: 'Sick'})-[v:VISITS]->(p:Place)\n" +
+                        "WHERE v.starttime <= sick.confirmedtime\n" +
+                        "WITH p, count(sick) AS nbOfSickVisits\n" +
+                        "RETURN p.type AS placeType, nbOfSickVisits\n" +
+                        "ORDER BY nbOfSickVisits DESC\n" +
+                        "LIMIT 1;"
+        );
+
+        return result.list().get(0);
     }
 
     public List<Record> sickFrom(List<String> names) {

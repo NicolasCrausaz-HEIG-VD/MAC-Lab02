@@ -27,7 +27,13 @@ public class Requests {
     }
 
     public List<Record> possibleSpreaders() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        //todo check WHERE
+        var result = driver.session().run(
+                "MATCH (pS:Person{healthstatus:'Sick'})-->(vS:Visit)" +
+                        "-->(Place)<--(vH:Visit)<--(pH:Person{healthstatus:'Healthy'}) \n" +
+                        "WHERE pS.confirmedtime > vS.starttime \n" +
+                        "RETURN pS.name as sickName\n");
+        return result.list();
     }
 
     public List<Record> possibleSpreadCounts() {
@@ -64,7 +70,16 @@ public class Requests {
     }
 
     public List<Record> healthyCompanionsOf(String name) {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", name);
+        var result = driver.session().run(
+                "MATCH (p:Person {name: $name})\n"+
+                        "-[:VISIT*..3]-(c:Person {healthstatus:'Healthy'})\n"+
+                        "RETURN c.name AS healthyName",
+                        params
+        );
+
+        return result.list();
     }
 
     public Record topSickSite() {

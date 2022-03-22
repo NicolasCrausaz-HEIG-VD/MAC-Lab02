@@ -39,9 +39,9 @@ public class Requests {
     public List<Record> possibleSpreadCounts() {
         var result = driver.session().run(
                 "MATCH (p:Person{healthstatus: 'Sick'})-->(v1:Visit)" +
-                "-->(pl:Place)<--(v2:Visit)<--(h:Person{healthstatus: 'Healthy'}) \n" +
-                "WHERE p.confirmedtime < v2.starttime\n" +
-                "RETURN p.name AS sickName, COUNT(h) AS nbHealthy");
+                        "-->(pl:Place)<--(v2:Visit)<--(h:Person{healthstatus: 'Healthy'}) \n" +
+                        "WHERE p.confirmedtime < v2.starttime\n" +
+                        "RETURN p.name AS sickName, COUNT(h) AS nbHealthy");
 
         return result.list();
     }
@@ -80,7 +80,6 @@ public class Requests {
                         "    WHERE overlap.hours >= 2\n" +
                         "    RETURN healthy.name AS toInform\n" +
                         "}\n" +
-                        "\n" +
                         "RETURN sick.name AS sickName, collect(toInform) as peopleToInform"
         );
 
@@ -88,17 +87,30 @@ public class Requests {
     }
 
     public List<Record> setHighRisk() {
-        throw new UnsupportedOperationException("Not implemented, yet");
+        var result = driver.session().run(
+                "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)\n" +
+                        "CALL {\n" +
+                        "    WITH v1, p1\n" +
+                        "    MATCH (healthy:Person{healthstatus: 'Healthy'})-[v2:VISITS]->(p2:Place{id: p1.id})\n" +
+                        "    WITH duration.between(apoc.coll.max([v1.starttime, v2.starttime]), apoc.coll.min([v1.endtime, v2.endtime])) as overlap, healthy\n" +
+                        "    WHERE overlap.hours >= 2\n" +
+                        "    SET healthy.risk = 'high'\n" +
+                        "    RETURN healthy.name as highRiskName\n" +
+                        "}\n" +
+                        "RETURN highRiskName;"
+        );
+
+        return result.list();
     }
 
     public List<Record> healthyCompanionsOf(String name) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", name);
         var result = driver.session().run(
-                "MATCH (p:Person {name: $name})\n"+
-                        "-[:VISIT*..3]-(c:Person {healthstatus:'Healthy'})\n"+
+                "MATCH (p:Person {name: $name})\n" +
+                        "-[:VISIT*..3]-(c:Person {healthstatus:'Healthy'})\n" +
                         "RETURN c.name AS healthyName",
-                        params
+                params
         );
 
         return result.list();
@@ -123,8 +135,8 @@ public class Requests {
 
         var result = driver.session().run(
                 "MATCH (p:Person {healthstatus:'Sick'})\n" +
-                "WHERE p.name IN $listOfNames\n" +
-                "RETURN p.name AS sickName",
+                        "WHERE p.name IN $listOfNames\n" +
+                        "RETURN p.name AS sickName",
                 params
         );
 

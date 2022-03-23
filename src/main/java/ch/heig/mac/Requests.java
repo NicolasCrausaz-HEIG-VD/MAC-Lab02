@@ -104,8 +104,9 @@ public class Requests {
     public List<Record> healthyCompanionsOf(String name) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", name);
+        //P-V-P-V-P-V-P (P = Person, V = Visit, - = jump) so min 2 jumps and max 6 jumps
         var result = driver.session().run(
-                "MATCH (p:Person {name: 'Rocco Mendez'})-[:VISITS*2..6]-(c:Person {healthstatus:'Healthy'})\n" +
+                "MATCH (p:Person {name: $name})-[:VISITS*2..6]-(c:Person {healthstatus:'Healthy'})\n" +
                         "RETURN DISTINCT c.name AS healthyName",
                 params
         );

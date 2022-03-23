@@ -69,24 +69,32 @@ public class Requests {
     }
 
     public List<Record> peopleToInform() {
+        // Une autre version avec CALL
+        /*
+        "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)\n" +
+                "CALL {\n" +
+                "    WITH v1, p1\n" +
+                "    MATCH (healthy:Person{healthstatus: 'Healthy'})-[v2:VISITS]->(p2:Place{id: p1.id})\n" +
+                "    WITH duration.between(apoc.coll.max([v1.starttime, v2.starttime]), apoc.coll.min([v1.endtime, v2.endtime])) as overlap, healthy\n" +
+                "    WHERE overlap.hours >= 2\n" +
+                "    RETURN healthy.name AS toInform\n" +
+                "}\n" +
+                "RETURN sick.name AS sickName, collect(toInform) as peopleToInform"
+         */
         var result = driver.session().run(
-                "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)\n" +
-                        "CALL {\n" +
-                        "    WITH v1, p1\n" +
-                        "    MATCH (healthy:Person{healthstatus: 'Healthy'})-[v2:VISITS]->(p2:Place{id: p1.id})\n" +
-                        "    WITH duration.between(apoc.coll.max([v1.starttime, v2.starttime]), apoc.coll.min([v1.endtime, v2.endtime])) as overlap, healthy\n" +
-                        "    WHERE overlap.hours >= 2\n" +
-                        "    RETURN healthy.name AS toInform\n" +
-                        "}\n" +
-                        "RETURN sick.name AS sickName, collect(toInform) as peopleToInform"
+                "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)<-[v2:VISITS]-(healthy:Person{healthstatus: 'Healthy'})\n" +
+                        "WHERE duration.between(apoc.coll.max([v1.starttime, v2.starttime]), apoc.coll.min([v1.endtime, v2.endtime])).hours >= 2\n" +
+                        "RETURN sick.name AS sickName, collect(DISTINCT healthy.name) as peopleToInform\n" +
+                        "ORDER BY peopleToInform"
         );
 
         return result.list();
     }
 
     public List<Record> setHighRisk() {
-        var result = driver.session().run(
-                "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)\n" +
+        // Une autre version avec CALL
+        /*
+         * "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)\n" +
                         "CALL {\n" +
                         "    WITH v1, p1\n" +
                         "    MATCH (healthy:Person{healthstatus: 'Healthy'})-[v2:VISITS]->(p2:Place{id: p1.id})\n" +
@@ -96,6 +104,12 @@ public class Requests {
                         "    RETURN healthy.name as highRiskName\n" +
                         "}\n" +
                         "RETURN highRiskName;"
+         */
+        var result = driver.session().run(
+                "MATCH (sick:Person{healthstatus: 'Sick'})-[v1:VISITS]->(p1:Place)<-[v2:VISITS]-(healthy:Person{healthstatus: 'Healthy'})\n" +
+                        "WHERE duration.between(apoc.coll.max([v1.starttime, v2.starttime]), apoc.coll.min([v1.endtime, v2.endtime])).hours >= 2\n" +
+                        "SET healthy.risk = 'high'\n" +
+                        "RETURN healthy.name as highRiskName"
         );
 
         return result.list();
